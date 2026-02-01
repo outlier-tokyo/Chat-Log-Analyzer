@@ -13,62 +13,148 @@ import sys
 from pathlib import Path
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent / "ai-chat-analyzer" / "src"))
+src_path = Path(__file__).parent / "ai-chat-analyzer" / "src"
+sys.path.insert(0, str(src_path))
 
-from loader.huggingface_loader import HuggingFaceLoader
+try:
+    from loader.huggingface_loader import HuggingFaceLoader
+except ImportError as e:
+    print(f"Error: Could not import HuggingFaceLoader from {src_path}")
+    print("Please ensure the file exists at: ai-chat-analyzer/src/loader/huggingface_loader.py")
+    print(f"Details: {e}")
+    sys.exit(1)
 import pandas as pd
 from datetime import datetime, timedelta
 import random
 
 
 def create_mock_data():
-    """Create mock data for testing when actual dataset is unavailable."""
+    """Create rich mock data for testing when actual dataset is unavailable."""
     ages = ["10s", "20s", "30s", "40s", "50s", "60s+"]
     genders = ["Male", "Female", "Other"]
-    speakers = ["user", "ai"]
     
-    sample_messages = [
+    # Richer sample messages covering various topics
+    user_messages = [
         "こんにちは",
         "今日の天気は？",
+        "週末の天気予報を教えてください",
+        "明日の気温は何度ですか？",
+        "雨が降る確率は？",
+        "傘を持つべきですか？",
+        "今週のスケジュールを確認したいです",
+        "明日の会議は何時ですか？",
+        "ファイルを送ってください",
+        "レポートの締め切りはいつですか？",
+        "このプロジェクトの進捗状況は？",
+        "バグを見つけました",
+        "新機能の実装は完了しましたか？",
+        "コードレビューをお願いします",
+        "ドキュメントはありますか？",
+        "ユーザーマニュアルを読みました",
+        "その機能は便利ですね",
+        "どのように使いますか？",
+        "サポートが必要です",
+        "問題を報告したいのですが",
         "ありがとうございます",
-        "お疲れ様です",
+        "ご協力ありがとうございました",
         "わかりました",
-        "そうですね",
-        "いいですね",
-        "なるほど"
+        "了解です",
+        "そうですね、その通りです",
+        "いいですね、その案に賛成です",
+        "なるほど、理解できました",
+        "本当ですか？",
+        "詳しく教えてください",
+        "もう少し説明していただけますか？",
+        "この件について相談があります",
+        "アドバイスをもらえますか？",
+    ]
+    
+    ai_messages = [
+        "こんにちは、ご質問ありがとうございます",
+        "明日は晴れの予報です",
+        "気温は20度程度になるでしょう",
+        "雨が降る確率は10%です",
+        "天気が良さそうですので、傘は不要かもしれません",
+        "確認させていただきました",
+        "明日の会議は14:00です",
+        "ファイルをお送りしました",
+        "締め切りは金曜日です",
+        "プロジェクトの進捗は予定通りです",
+        "そのバグについて確認いたします",
+        "新機能の実装は90%完了しています",
+        "かしこまりました、確認します",
+        "ドキュメントをご覧ください",
+        "ご理解ありがとうございます",
+        "使い方については、以下の手順をお確認ください",
+        "ご不明な点はお気軽にお尋ねください",
+        "ご協力いただき、ありがとうございます",
+        "お力になれて嬉しいです",
+        "こちらこそありがとうございました",
+        "ご指摘ありがとうございます",
+        "貴重なご意見をいただき、ありがとうございます",
+        "ご提案ありがとうございます",
+        "このような手段もあります",
+        "参考までに、こちらの資料をご覧ください",
+        "詳しくご説明いたします",
+        "承知いたしました",
+        "相談にのります",
+        "お力になれたら幸いです",
     ]
     
     records = []
     now = datetime.now()
     
-    for session in range(3):
-        session_id = f"session_{session:03d}"
-        user_id = f"user_{random.randint(1, 10)}"
-        age = random.choice(ages)
-        gender = random.choice(genders)
+    # Generate more sessions and users for richer data
+    num_sessions = 15
+    num_users = 12
+    messages_per_session = 10
+    
+    # Pre-assign user attributes
+    user_profiles = {}
+    for uid in range(1, num_users + 1):
+        user_profiles[f"user_{uid}"] = {
+            "age": random.choice(ages),
+            "gender": random.choice(genders)
+        }
+    
+    for session in range(num_sessions):
+        session_id = f"session_{session:04d}"
+        user_id = f"user_{random.randint(1, num_users)}"
+        user_attr = user_profiles[user_id]
         
-        for i in range(5):
-            timestamp = now - timedelta(hours=random.randint(0, 24))
+        # Randomize session duration (within 24 hours)
+        session_start = now - timedelta(hours=random.randint(0, 72))
+        
+        for msg_idx in range(messages_per_session):
+            # Alternate between user and AI messages
+            timestamp = session_start + timedelta(minutes=msg_idx * random.randint(1, 5))
+            
+            # User message
             records.append({
                 "timestamp": timestamp,
                 "session_id": session_id,
                 "user_id": user_id,
                 "speaker": "user",
-                "message": random.choice(sample_messages),
-                "user_age": age,
-                "user_gender": gender
+                "message": random.choice(user_messages),
+                "user_age": user_attr["age"],
+                "user_gender": user_attr["gender"]
             })
+            
+            # AI response (slightly delayed)
             records.append({
-                "timestamp": timestamp + timedelta(seconds=random.randint(1, 30)),
+                "timestamp": timestamp + timedelta(seconds=random.randint(2, 15)),
                 "session_id": session_id,
                 "user_id": user_id,
                 "speaker": "ai",
-                "message": random.choice(sample_messages),
+                "message": random.choice(ai_messages),
                 "user_age": "",
                 "user_gender": ""
             })
     
-    return pd.DataFrame(records)
+    df = pd.DataFrame(records)
+    # Sort by timestamp for more realistic data
+    df = df.sort_values("timestamp").reset_index(drop=True)
+    return df
 
 
 def test_load_dataset():
