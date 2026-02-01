@@ -1,4 +1,3 @@
-# %% writefile Chat-Log-Analyzer/ai-chat-analyzer/src/loader/huggingface_loader.py
 import pandas as pd
 from datasets import load_dataset
 from .base_loader import BaseLoader
@@ -32,9 +31,11 @@ class HuggingFaceLoader(BaseLoader):
         try:
             # Note: This dataset might require accepting terms on Hugging Face website.
             # If authentication error occurs, run `huggingface-cli login` in terminal.
-            dataset = load_dataset(self.dataset_name, split=self.split, trust_remote_code=True)
+            # trust_remote_code parameter is removed as datasets no longer support custom scripts
+            dataset = load_dataset(self.dataset_name, split=self.split)
         except Exception as e:
             print(f"Error loading dataset: {e}")
+            print("Note: Some datasets with custom loading scripts are no longer supported.")
             print("Please ensure you have accepted the dataset terms on Hugging Face and logged in.")
             return pd.DataFrame()
 
