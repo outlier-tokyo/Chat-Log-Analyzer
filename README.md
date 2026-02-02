@@ -131,6 +131,68 @@ pip install -r requirements.txt
 
 ```
 
+### ⚠️ 環境構築時の注意事項
+
+以下の問題が発生した場合の対処法です：
+
+#### 1. UMAP/Numbaコンパイルエラー
+**症状:** `LLVMPY_ParseAssembly` エラーでプロセスがハング
+
+```
+KeyboardInterrupt: ... LLVMPY_ParseAssembly ... llvmlite ...
+```
+
+**原因:** UMAP の JIT コンパイラ（Numba）と LLVM の互換性問題（特に Windows/Python 3.10で発生）
+
+**対処:**
+- UMAP使用を避け、PCA等の代替実装を使用
+- `src/visualization/visualizer.py` にはフォールバック実装済み（UMAP失敗時→PCA）
+- 本ノートブックでもPCAをデフォルトで使用しています
+
+#### 2. MeCab/Janome トークン化エラー
+**症状:** `ModuleNotFoundError: No module named 'janome'`
+
+```bash
+pip install janome
+```
+
+**症状:** `MeCab.Tagger() 初期化失敗`
+- Windows: `pip install mecab-python3` の後、MeCab本体インストール必要
+- 代替: `janome` ライブラリを使用（Python純粋実装）
+
+#### 3. HDBSCANインストール失敗
+**症状:** `pip install hdbscan` が失敗する（ビルドエラー）
+
+```bash
+# Windows環境では事前コンパイル版をインストール
+pip install hdbscan --only-binary :all:
+```
+
+#### 4. ターミナル/Jupyter が反応しなくなる
+**症状:** UMAP/大量データ処理時にメモリ枯渇やプロセスハング
+
+**対処:**
+```bash
+# プロセスを強制終了
+# Windows PowerShell
+Stop-Process -Name python -Force
+
+# Linux/Mac
+pkill -f python
+```
+
+#### 5. 推奨環境設定
+```bash
+# 仮想環境は必須（依存関係の競合を避けるため）
+python -m venv venv
+source venv/bin/activate  # or ./venv/Scripts/activate (Windows)
+
+# キャッシュをクリアしてインストール
+pip install --no-cache-dir -r requirements.txt
+
+# 特に問題が多い場合は一度クリア
+pip cache purge
+```
 
 
 ## 5. Usage
