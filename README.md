@@ -1,266 +1,121 @@
-# Chat Log Analyzer (ai-chat-analyzer)
+# Chat Log Analyzer
 
-AIキャラクターとユーザーの会話ログを分析し、インサイトを導出するためのPythonフレームワークです。
-会話ログデータとユーザー属性データを掛け合わせ、「会話単位」「ユーザー単位」「単語単位」の多角的な視点から分析・可視化を行います。
+会話ログデータを多角的に分析・可視化し、深いインサイトを導き出すための高度な Python フレームワークです。
+複数のデータソースに対応し、テキストマイニング、自然言語処理（NLP）、そして LLM を組み合わせた一連の分析パイプラインを提供します。
 
-## 1. Overview
+## 🚀 Overview
 
-本プロジェクトは、AWS Athena (S3) やCSVファイルから会話ログを読み込み、テキストマイニング技術を用いて動的なダッシュボードを構築することを目的としています。
+本プロジェクトは、さまざまなチャット形式のログ（CSV、データベース、HuggingFace Datasets など）を統合的に扱い、対話の構造や傾向を解き明かすことを目的としています。
 
 **主な特徴:**
-* **データソース非依存:** データ取得ロジックを抽象化し、S3/AthenaでもローカルCSVでも同様に扱えます。
-* **多層分析:** 形態素解析、共起分析、ベクトル化、クラスタリング、LLM要約をサポート。
-* **ポータビリティ:** `git clone` と `pip install` だけで動作し、Docker等の複雑な環境構築を必要としません。
+*   **データソース非依存:** ローカルの CSV から AWS Athena (S3)、公開データセットまで柔軟に対応。
+*   **多層的な分析パイプライン:** 
+    *   **形態素解析 & クリーニング:** 日本語テキストの最適な正規化。
+    *   **ベクトル解析:** Sentence-BERT を用いた意味レベルでの埋め込み。
+    *   **トピック抽出:** 高度なクラスタリングによる話題の自動分類。
+    *   **構造可視化:** 共起ネットワークによる単語間のつながりの把握。
+    *   **AI 要約:** LLM を活用した文脈に沿った要約生成。
+*   **次世代のインサイト抽出 (Core Pillars):**
+    1.  **Delta分析 (コホート比較):** 属性や行動によるグループ間の「決定的な差異」を抽出し、成功要因や離脱原因を特定。
+    2.  **アーキタイプ分類 (ペルソナ抽出):** 会話傾向からユーザーを性格的・目的的なタイプに分類し、具体的な像（ペルソナ）を可視化。
+    3.  **Gap分析 (潜在ニーズ発見):** 表面化していないが文脈に含まれる潜在的な課題や機会を LLM で推論。
+    4.  **モーメント分析 (熱量変化):** 会話中の「心が動いた瞬間（Aha! Moment）」や「離脱の兆候」を特定し、感情の質的な動きを捕捉。
+*   **直感的なビジュアライゼーション:** インタラクティブなグラフにより、非専門家でも分析結果を即座に理解可能。
+*   **双方向のプレゼンテーション層 (UX):**
+    *   **Advanced Jupyter Widgets:** 分析対象の選択、期間指定、パラメータ調整をノートブック上で行えるインタラクティブな資料。
+    *   **Professional Dashboard (Streamlit):** クライアントへのプレゼンテーションや共有に最適な、HTMLベースの本格的なダッシュボード実装。
 
-### Architecture Overview
+## 🏗️ Architecture
 
 ```mermaid
 graph TD
-    subgraph Data Source
-        S3[AWS S3 / Athena] -->|Fetch| Loader
-        CSV[Local CSV / OpenData] -->|Load| Loader
+    subgraph Data_Sources
+        NUCC[NUCC Corpus]
+        CSV[Local Raw CSV]
+        HF[HuggingFace (Optional)]
     end
 
-    subgraph Logic Layer [src/analysis]
-        Loader[DataLoader] -->|DataFrame| Preprocess[Preprocessor]
-        Preprocess -->|Cleaned Text| Engine[Analysis Engine]
-        
-        Engine --> A[Topic Clustering]
-        Engine --> B[User Profiling]
-        Engine --> C[Co-occurrence Network]
-        Engine --> D[LLM Summary]
+    subgraph Analysis_Pipeline [src/analysis]
+        Loader[Local/NUCC Loader] --> Pre[Preprocessor]
+        Pre --> Engine1[Archetype Engine]
+        Pre --> Engine2[Gap Analysis Engine]
+        Pre --> Engine3[Delta Analysis]
     end
 
-    subgraph Presentation Layer
-        Engine -->|Visuals| NB[Jupyter Notebook]
-        Engine -->|Visuals| App[Streamlit App]
+    subgraph Outputs
+        NB[Jupyter Notebook]
+        Plotly[User Maps & Insights]
     end
 
+    NUCC --> Loader
+    CSV --> Loader
+    Engine1 --> Plotly
+    Engine2 --> NB
+    Engine3 --> NB
 ```
 
-## 2. Features
-
-### 2.1 Data Ingestion
-
-開発用データセットとして、ユーザー属性を含む **`nu-dialogue/real-persona-chat`** (Hugging Face) に標準対応しています。
-本番環境では AWS Athena から取得したデータを同様の DataFrame 形式に変換して処理します。
-
-### 2.2 Analysis Capabilities
-
-| Level | Analysis Type | Description |
-| --- | --- | --- |
-| **Word** | 共起分析 | 単語間のネットワーク図を描画し、話題の構造を可視化 |
-| **Session** | クラスタリング | 会話トピックの自動分類（K-means / Embeddings） |
-| **Session** | LLM要約 | 会話ログ全体の要約生成 |
-| **User** | プロファイリング | 属性（年代・性別）ごとの発言傾向分析 |
-| **User** | ベクトル化 | 全会話履歴をベクトル化し、類似ユーザーを特定 |
-
-### 2.3 Visualization
-
-`matplotlib` と `plotly` を採用し、日本語を含むリッチなグラフ描画が可能です。
-
-## 3. Directory Structure
-
-ロジック（`src`）とプレゼンテーション（`notebooks`）を分離した構成です。
+## 📂 Directory Structure
 
 ```text
-ai-chat-analyzer/
-├── data/                  # データ格納用 (.gitignore)
-│   ├── raw/               # 元データ (Athenaエクスポート or OpenData)
-│   └── processed/         # 前処理済みデータ
-├── notebooks/             # 分析ダッシュボード (Jupyter)
-│   ├── 01_overview.ipynb  # 基本統計・データ確認
-│   ├── 02_user_analysis.ipynb # 属性別分析・プロファイリング
-│   └── 03_topic_clustering.ipynb # トピック分析・共起ネットワーク
-├── src/                   # ソースコード
-│   ├── __init__.py
-│   ├── config.py          # 設定ファイル
-│   ├── loader/            # データ読み込み
-│   │   ├── base_loader.py
-│   │   ├── csv_loader.py
-│   │   └── huggingface_loader.py # nu-dialogue用
-│   ├── preprocessor/      # 前処理
-│   │   ├── text_cleaner.py
-│   │   └── tokenizer.py   # MeCab/UniDic
-│   ├── analysis/          # 分析ロジック中核
-│   │   ├── clustering.py
-│   │   ├── cooccurrence.py
-│   │   ├── vectorizer.py
-│   │   └── llm_wrapper.py
-│   └── visualization/     # 描画モジュール
-│       ├── charts.py
-│       └── plot_utils.py
+Chat-Log-Analyzer/
+├── data/                   # 分析用データ
+│   └── raw/               # NUCCやCSVファイルを配置
+├── notebooks/              # 分析ダッシュボード (Showcase)
+│   ├── 01_overview.ipynb           # データ概要・Delta分析
+│   ├── 02_archetype_analysis.ipynb # アーキタイプ抽出・可視化
+│   └── 03_gap_analysis.ipynb       # 潜在ニーズ発見
+├── src/                    # フレームワーク本体
+│   ├── loader/            # NUCCLoader, LocalDatasetLoader
+│   ├── preprocessor/      # Tokenizer
+│   ├── analysis/          # Archetype, Gap, Delta Engines
+│   └── visualization/     # Plotly Charts
+├── tests/                  # 基本的なテスト
+├── scripts/                # 検証用スクリプト (verify_*)
 ├── requirements.txt
-├── .gitignore
 └── README.md
-
 ```
 
-## 4. Installation
+## 🛠️ Installation & Setup
 
-### Prerequisites
+1.  **Clone & Enter**
+    ```bash
+    git clone <repository_url>
+    cd Chat-Log-Analyzer
+    ```
 
-* Python 3.10+
-* (Optional) OpenAI API Key (LLM機能利用時)
+2.  **Environment Setup**
+    ```bash
+    # 仮想環境作成と依存ライブラリのインストール
+    python -m venv venv
+    .\venv\Scripts\activate  # Windows
+    pip install -r requirements.txt
+    ```
 
-### Setup Steps
+3.  **Data Preparation**
+    *   `data/raw/nucc/nucc` に名大会話コーパスのテキストファイルを配置してください。
+    *   または `data/raw/` に分析したいCSVファイルを配置してください。
 
-1. **Clone the repository**
-```bash
-git clone <repository_url>
-cd ai-chat-analyzer
+## 📊 Usage
 
+主要な機能は Jupyter Notebook から呼び出します。
+
+```python
+from src.loader.nucc_loader import NUCCLoader
+from src.analysis.archetype import ArchetypeEngine
+
+# データの読み込み
+loader = NUCCLoader(data_dir='data/raw/nucc/nucc')
+df = loader.load()
+
+# アーキタイプ分析の実行
+engine = ArchetypeEngine(n_clusters=4)
+features = engine.analyze_user_characteristics(df)
+archetypes = engine.classify_archetypes(features)
+
+# 結果の確認
+display(archetypes.head())
 ```
 
+## 📜 License
 
-2. **Create Virtual Environment**
-```bash
-python -m venv venv
-
-# Windows
-.\venv\Scripts\activate
-# Mac/Linux
-source venv/bin/activate
-
-```
-
-
-3. **Install Dependencies**
-```bash
-pip install -r requirements.txt
-
-```
-
-### ⚠️ 環境構築時の注意事項
-
-以下の問題が発生した場合の対処法です：
-
-#### 1. UMAP/Numbaコンパイルエラー
-**症状:** `LLVMPY_ParseAssembly` エラーでプロセスがハング
-
-```
-KeyboardInterrupt: ... LLVMPY_ParseAssembly ... llvmlite ...
-```
-
-**原因:** UMAP の JIT コンパイラ（Numba）と LLVM の互換性問題（特に Windows/Python 3.10で発生）
-
-**対処:**
-- UMAP使用を避け、PCA等の代替実装を使用
-- `src/visualization/visualizer.py` にはフォールバック実装済み（UMAP失敗時→PCA）
-- 本ノートブックでもPCAをデフォルトで使用しています
-
-#### 2. MeCab/Janome トークン化エラー
-**症状:** `ModuleNotFoundError: No module named 'janome'`
-
-```bash
-pip install janome
-```
-
-**症状:** `MeCab.Tagger() 初期化失敗`
-- Windows: `pip install mecab-python3` の後、MeCab本体インストール必要
-- 代替: `janome` ライブラリを使用（Python純粋実装）
-
-#### 3. HDBSCANインストール失敗
-**症状:** `pip install hdbscan` が失敗する（ビルドエラー）
-
-```bash
-# Windows環境では事前コンパイル版をインストール
-pip install hdbscan --only-binary :all:
-```
-
-#### 4. ターミナル/Jupyter が反応しなくなる
-**症状:** UMAP/大量データ処理時にメモリ枯渇やプロセスハング
-
-**対処:**
-```bash
-# プロセスを強制終了
-# Windows PowerShell
-Stop-Process -Name python -Force
-
-# Linux/Mac
-pkill -f python
-```
-
-#### 5. 推奨環境設定
-```bash
-# 仮想環境は必須（依存関係の競合を避けるため）
-python -m venv venv
-source venv/bin/activate  # or ./venv/Scripts/activate (Windows)
-
-# キャッシュをクリアしてインストール
-pip install --no-cache-dir -r requirements.txt
-
-# 特に問題が多い場合は一度クリア
-pip cache purge
-```
-
-
-## 5. Usage
-
-### Quick Start (Dev Mode)
-
-開発用データセット(`nu-dialogue/real-persona-chat`)を自動ダウンロードして分析を開始します。
-
-```bash
-# Jupyter Labを起動
-jupyter lab
-
-```
-
-`notebooks/01_overview.ipynb` を開き、セルを実行してください。
-
-### Data Schema
-
-分析に使用する DataFrame は以下のスキーマを想定しています。
-
-| Column | Type | Description |
-| --- | --- | --- |
-| `timestamp` | datetime | 発話日時 |
-| `user_id` | str | ユーザーID |
-| `speaker` | str | `User` or `System` |
-| `text` | str | 発話内容 |
-| `attribute_age` | str | (Optional) ユーザー年代 |
-| `attribute_gender` | str | (Optional) ユーザー性別 |
-
-## 6. Development Workflow
-
-```mermaid
-sequenceDiagram
-    participant Dev as Developer
-    participant NB as Jupyter Notebook
-    participant Src as src/ (Modules)
-    participant Repo as Git Repository
-
-    Dev->>NB: 1. プロトタイプ実装 (EDA)
-    NB->>Src: 2. 汎用ロジックをモジュール化 (.py)
-    Src-->>NB: 3. モジュールをimportして再利用
-    Dev->>Repo: 4. Push
-    Note over Dev, Repo: git clone して NB を実行
-
-```
-
-# requirements.txt
-
-```text
-pandas>=2.0.0
-numpy>=1.24.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
-plotly>=5.15.0
-japanize-matplotlib>=1.1.3
-wordcloud>=1.9.0
-mecab-python3>=1.0.6
-unidic-lite>=1.0.8
-scikit-learn>=1.3.0
-sentence-transformers>=2.2.2
-transformers>=4.30.0
-torch>=2.0.0
-networkx>=3.1
-openai>=1.0.0
-python-dotenv>=1.0.0
-tqdm>=4.65.0
-jupyterlab>=4.0.0
-ipykernel>=6.25.0
-datasets>=2.14.0
-
-```
+[MIT License](LICENSE)

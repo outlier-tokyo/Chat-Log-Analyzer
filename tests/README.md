@@ -35,7 +35,7 @@ python tests/test_tokenizer.py
 
 ### Run with coverage
 ```bash
-python -m pytest tests/ --cov=ai-chat-analyzer/src
+python -m pytest tests/ --cov=src
 ```
 
 ## Test Status
@@ -45,11 +45,11 @@ python -m pytest tests/ --cov=ai-chat-analyzer/src
 | HuggingFaceLoader | ✓ Complete | test_huggingface_loader.py |
 | TextCleaner | ✓ Complete | test_text_cleaner.py |
 | Tokenizer | ✓ Complete | test_tokenizer.py |
-| CSVLoader | In Progress | test_csv_loader.py |
-| TopicClusterer | Not Started | test_clustering.py |
-| CooccurrenceNetwork | Not Started | test_cooccurrence.py |
-| TextVectorizer | Not Started | test_vectorizer.py |
-| Charts | Not Started | test_charts.py |
+| CSVLoader | ✓ Complete | test_csv_loader.py |
+| TopicClusterer | ✓ Complete | test_clustering.py |
+| CooccurrenceNetwork | ✓ Complete | test_cooccurrence.py |
+| TextVectorizer | ✓ Complete | test_vectorizer.py |
+| Charts | ✓ Complete | test_visualizer.py |
 
 ## Adding New Tests
 
